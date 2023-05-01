@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:sensors/sensors.dart';
 // import 'package:sensors_plus/sensors_plus.dart';
+import 'package:vibration/vibration.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -36,6 +37,8 @@ class _TemperaturePageState extends State<TemperaturePage> {
   late final http.Client _client;
   late String _temperature;
   late TextEditingController _temperatureController;
+  late TextEditingController _notifyperiod;
+
   double _angle = 0;
   late StreamSubscription<AccelerometerEvent> _subscription;
   late double _temp;
@@ -50,6 +53,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
     _temperature = '-';
     _temp = 0;
     _temperatureController = TextEditingController();
+    _notifyperiod = TextEditingController();
     _startFetchingTemperature();
     // _listenToRotation();
 
@@ -66,7 +70,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
   Future<void> _fetchTemperature() async {
     try {
       final response = await _client.get(Uri.parse(
-          'http://192.168.143.137:8000/api/settemp/'));
+          'http://192.168.143.137:8000/api/settings/'));
       final json = jsonDecode(response.body);
       final temperature = json['temp'];
       print('Temperature: $temperature');
@@ -74,7 +78,11 @@ class _TemperaturePageState extends State<TemperaturePage> {
         // _temperature = temperature.toString();
         double beta = double.parse(temperature);
         _temp = beta;
+        if (beta > 100){
+          Vibration.vibrate(duration: 1000);
+        }
       });
+
     } catch (e) {
       debugPrint(e.toString());
     }
@@ -91,6 +99,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
          _sendAngle(_angle);
          //stopListeningToAccelerometer();
       }
+
       // else{
       //   stopListeningToAccelerometer();
       // }
@@ -137,7 +146,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
        double alpha = (t +_temp);
       String a = (alpha).toStringAsFixed(2);
       final response = await _client.post(
-        Uri.parse('http://192.168.143.137:8000/api/settemp/'),
+        Uri.parse('http://192.168.143.137:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
           'temp': a,
           'notify_period':1
@@ -169,16 +178,21 @@ class _TemperaturePageState extends State<TemperaturePage> {
   Future<void> _sendTemperature() async {
     try {
       final temperature = _temperatureController.text.trim();
+      final notifyperiod = _notifyperiod.text.trim();
       if (temperature.isEmpty) {
         return;
       }
+      if (notifyperiod.isEmpty){
+        return;
+      }
       double beta = double.parse(temperature);
+      double charlie = double.parse(notifyperiod);
       final response = await _client.post(
 
-        Uri.parse('http://192.168.143.137:8000/api/settemp/'),
+        Uri.parse('http://192.168.143.137:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
           'temp': beta,
-          'notify_period':1
+          'notify_period':charlie
         }),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
@@ -229,9 +243,16 @@ class _TemperaturePageState extends State<TemperaturePage> {
     labelText: 'Enter your temperature',
     ),
     ),
+      TextField(
+        controller: _notifyperiod,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: 'Enter the notification Period',
+        ),
+      ),
     ElevatedButton(
     onPressed: _sendTemperature,
-    child: const Text('Send Temperature'),
+    child: const Text('Send Data'),
     ),
       ElevatedButton(
         onPressed: _toggleFunctionEnabled,
