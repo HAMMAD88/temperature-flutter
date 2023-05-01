@@ -21,13 +21,64 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: TemperaturePage(),
+      home: const IpAddressPage(),
+    );
+  }
+}
+class IpAddressPage extends StatefulWidget {
+  const IpAddressPage({Key? key}) : super(key: key);
+
+  @override
+  _IpAddressPageState createState() => _IpAddressPageState();
+}
+
+class _IpAddressPageState extends State<IpAddressPage> {
+  TextEditingController _ipAddressController = TextEditingController();
+
+  void _submitIpAddress() {
+    final ipAddress = _ipAddressController.text.trim();
+    if (ipAddress.isNotEmpty) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TemperaturePage(ipAddress: ipAddress),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Enter Server IP Address'),
+        centerTitle: true,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: _ipAddressController,
+              keyboardType: TextInputType.text,
+              decoration: const InputDecoration(
+                labelText: 'Enter the IP Address',
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _submitIpAddress,
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
+
 class TemperaturePage extends StatefulWidget {
-   TemperaturePage({Key? key}) : super(key: key);
+  final String ipAddress;
+  TemperaturePage({Key? key,required this.ipAddress}) : super(key: key);
   bool _isEnabled = false;
   @override
   _TemperaturePageState createState() => _TemperaturePageState();
@@ -70,7 +121,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
   Future<void> _fetchTemperature() async {
     try {
       final response = await _client.get(Uri.parse(
-          'http://192.168.143.137:8000/api/settings/'));
+          'http://${widget.ipAddress}:8000/api/settings/'));
       final json = jsonDecode(response.body);
       final temperature = json['temp'];
       print('Temperature: $temperature');
@@ -78,7 +129,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
         // _temperature = temperature.toString();
         double beta = double.parse(temperature);
         _temp = beta;
-        if (beta > 100){
+        if (beta > 25){
           Vibration.vibrate(duration: 1000);
         }
       });
@@ -146,7 +197,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
        double alpha = (t +_temp);
       String a = (alpha).toStringAsFixed(2);
       final response = await _client.post(
-        Uri.parse('http://192.168.143.137:8000/api/settings/'),
+        Uri.parse('http://${widget.ipAddress}:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
           'temp': a,
           'notify_period':1
@@ -189,11 +240,12 @@ class _TemperaturePageState extends State<TemperaturePage> {
       double charlie = double.parse(notifyperiod);
       final response = await _client.post(
 
-        Uri.parse('http://192.168.143.137:8000/api/settings/'),
+        Uri.parse('http://${widget.ipAddress}:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
           'temp': beta,
           'notify_period':charlie
         }),
+
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
