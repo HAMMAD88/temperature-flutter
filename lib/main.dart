@@ -121,7 +121,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
   Future<void> _fetchTemperature() async {
     try {
       final response = await _client.get(Uri.parse(
-          'http://${widget.ipAddress}:8000/api/settings/'));
+          'http://${widget.ipAddress}:8000/api/temp/'));
       final json = jsonDecode(response.body);
       final temperature = json['temp'];
       print('Temperature: $temperature');
@@ -129,9 +129,9 @@ class _TemperaturePageState extends State<TemperaturePage> {
         // _temperature = temperature.toString();
         double beta = double.parse(temperature);
         _temp = beta;
-        if (beta > 25){
-          Vibration.vibrate(duration: 1000);
-        }
+        // if (beta > 25){
+        //   Vibration.vibrate(duration: 1000);
+        // }
       });
 
     } catch (e) {
@@ -145,6 +145,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
       _fetchTemperature();
       // (put in the if below).
       if (widget._isEnabled){
+
         _listenToRotation();
          Future.delayed(const Duration(milliseconds: 200));
          _sendAngle(_angle);
@@ -165,6 +166,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
 
   void _toggleFunctionEnabled() {
     setState(() {
+      Vibration.vibrate(duration: 1000);
       widget._isEnabled = !widget._isEnabled;
       check = !check;
 
