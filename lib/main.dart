@@ -45,6 +45,15 @@ class _IpAddressPageState extends State<IpAddressPage> {
       );
     }
   }
+  void _submitDefault() {
+    final ipAddress = "10.42.0.1";
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => TemperaturePage(ipAddress: ipAddress),
+        ),
+      );
+
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +77,10 @@ class _IpAddressPageState extends State<IpAddressPage> {
               onPressed: _submitIpAddress,
               child: const Text('Submit'),
             ),
+            ElevatedButton(
+              onPressed: _submitDefault,
+              child: const Text('Connect to Default'),
+            ),
           ],
         ),
       ),
@@ -89,10 +102,11 @@ class _TemperaturePageState extends State<TemperaturePage> {
   late String _temperature;
   late TextEditingController _temperatureController;
   late TextEditingController _notifyperiod;
-
+  late TextEditingController _username;
   double _angle = 0;
   late StreamSubscription<AccelerometerEvent> _subscription;
   late double _temp;
+  late double _newtemp;
   bool check = false;
 
 
@@ -103,10 +117,12 @@ class _TemperaturePageState extends State<TemperaturePage> {
     _client = http.Client();
     _temperature = '-';
     _temp = 0;
+    _newtemp = 0;
     _temperatureController = TextEditingController();
     _notifyperiod = TextEditingController();
+    _username = TextEditingController();
     _startFetchingTemperature();
-    // _listenToRotation();
+    _startFetchingAngle();// _listenToRotation();
 
   }
 
@@ -138,24 +154,57 @@ class _TemperaturePageState extends State<TemperaturePage> {
       debugPrint(e.toString());
     }
   }
+  Future<void> _fetchNewTemperature() async {
+    try {
+      final response = await _client.get(Uri.parse(
+          'http://${widget.ipAddress}:8000/api/settings/'));
+      final json = jsonDecode(response.body);
+      final temperature = json['temp'];
+      print('Temperature: $temperature');
+      setState(() {
+        // _temperature = temperature.toString();
+        double beta = double.parse(temperature);
+        _newtemp = beta;
+        // if (beta > 25){
+        //   Vibration.vibrate(duration: 1000);
+        // }
+      });
+
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
 
   void _startFetchingTemperature() {
-    Future.delayed(const Duration(milliseconds: 50)).then((_) {
+    Future.delayed(const Duration(milliseconds: 500)).then((_) {
       //stopListeningToAccelerometer();
       _fetchTemperature();
+      _fetchNewTemperature();
       // (put in the if below).
-      if (widget._isEnabled){
+      //if (widget._isEnabled){
 
-        _listenToRotation();
-         Future.delayed(const Duration(milliseconds: 200));
-         _sendAngle(_angle);
+       // _listenToRotation();
+         // Future.delayed(const Duration(milliseconds: 50));
+      //   _sendAngle(_angle);
          //stopListeningToAccelerometer();
-      }
+      //}
 
       // else{
       //   stopListeningToAccelerometer();
       // }
       _startFetchingTemperature();
+
+    });
+
+  }
+  void _startFetchingAngle() {
+    Future.delayed(const Duration(milliseconds: 100)).then((_) {
+      if (widget._isEnabled){
+
+        _listenToRotation();
+        _sendAngle(_angle);
+      }
+      _startFetchingAngle();
 
     });
 
@@ -196,13 +245,12 @@ class _TemperaturePageState extends State<TemperaturePage> {
         return;
       }
        double t = -(angle * 0.5);
-       double alpha = (t +_temp);
+       double alpha = (t +_newtemp);
       String a = (alpha).toStringAsFixed(2);
       final response = await _client.post(
         Uri.parse('http://${widget.ipAddress}:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
           'temp': a,
-          'notify_period':1
         }),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
@@ -273,6 +321,48 @@ class _TemperaturePageState extends State<TemperaturePage> {
       debugPrint(e.toString());
     }
   }
+  Future<void> _sendUsername() async {
+    try {
+      final username = _username.text.trim();
+
+      if (username.isEmpty) {
+        return;
+      }
+
+
+      final response = await _client.post(
+
+        Uri.parse('http://${widget.ipAddress}:8000/api/card/'),
+        body: jsonEncode(<String, dynamic>{
+          'nfc': username,
+
+        }),
+
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Temperature sent successfully
+        _temperatureController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Temperature sent successfully'),
+          ),
+        );
+      } else {
+        // Error sending temperature
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error sending temperature'),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -282,6 +372,8 @@ class _TemperaturePageState extends State<TemperaturePage> {
     centerTitle: true,
     ),
     body: Center(
+      child : SingleChildScrollView(
+
     child: Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: <Widget>[
@@ -304,16 +396,29 @@ class _TemperaturePageState extends State<TemperaturePage> {
           labelText: 'Enter the notification Period',
         ),
       ),
-    ElevatedButton(
-    onPressed: _sendTemperature,
-    child: const Text('Send Data'),
-    ),
+      ElevatedButton(
+        onPressed: _sendTemperature,
+        child: const Text('Send Temperature and Notification Period'),
+      ),
+      TextField(
+        controller: _username,
+        keyboardType: TextInputType.name,
+        decoration: const InputDecoration(
+          labelText: 'Enter the User Name',
+        ),
+      ),
+
+      ElevatedButton(
+        onPressed: _sendUsername,
+        child: const Text('Send User Name'),
+      ),
       ElevatedButton(
         onPressed: _toggleFunctionEnabled,
         child: Text(widget._isEnabled ? 'Disable Accelerometer' : 'Enable Accelerometer'),
       ),
     ],
     ),
+      ), /////put bracket here
     ));
 
     }
