@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:sensors/sensors.dart';
-// import 'package:sensors_plus/sensors_plus.dart';
 import 'package:vibration/vibration.dart';
 void main() {
   runApp(const MyApp());
@@ -107,6 +106,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
   late StreamSubscription<AccelerometerEvent> _subscription;
   late double _temp;
   late double _newtemp;
+  late double _finaltemp;
   bool check = false;
 
 
@@ -118,11 +118,12 @@ class _TemperaturePageState extends State<TemperaturePage> {
     _temperature = '-';
     _temp = 0;
     _newtemp = 0;
+    _finaltemp = 0;
     _temperatureController = TextEditingController();
     _notifyperiod = TextEditingController();
     _username = TextEditingController();
     _startFetchingTemperature();
-    _startFetchingAngle();// _listenToRotation();
+    _startFetchingAngle();
 
   }
 
@@ -142,12 +143,8 @@ class _TemperaturePageState extends State<TemperaturePage> {
       final temperature = json['temp'];
       print('Temperature: $temperature');
       setState(() {
-        // _temperature = temperature.toString();
         double beta = double.parse(temperature);
         _temp = beta;
-        // if (beta > 25){
-        //   Vibration.vibrate(duration: 1000);
-        // }
       });
 
     } catch (e) {
@@ -160,14 +157,11 @@ class _TemperaturePageState extends State<TemperaturePage> {
           'http://${widget.ipAddress}:8000/api/settings/'));
       final json = jsonDecode(response.body);
       final temperature = json['temp'];
-      print('Temperature: $temperature');
       setState(() {
-        // _temperature = temperature.toString();
+
         double beta = double.parse(temperature);
         _newtemp = beta;
-        // if (beta > 25){
-        //   Vibration.vibrate(duration: 1000);
-        // }
+
       });
 
     } catch (e) {
@@ -177,21 +171,9 @@ class _TemperaturePageState extends State<TemperaturePage> {
 
   void _startFetchingTemperature() {
     Future.delayed(const Duration(milliseconds: 500)).then((_) {
-      //stopListeningToAccelerometer();
+
       _fetchTemperature();
       _fetchNewTemperature();
-      // (put in the if below).
-      //if (widget._isEnabled){
-
-       // _listenToRotation();
-         // Future.delayed(const Duration(milliseconds: 50));
-      //   _sendAngle(_angle);
-         //stopListeningToAccelerometer();
-      //}
-
-      // else{
-      //   stopListeningToAccelerometer();
-      // }
       _startFetchingTemperature();
 
     });
@@ -220,18 +202,15 @@ class _TemperaturePageState extends State<TemperaturePage> {
       check = !check;
 
     });
-    //stopListeningToAccelerometer();
   }
 
   void _listenToRotation() {
     _subscription = accelerometerEvents.listen((AccelerometerEvent event) {
       setState(() {
         _angle = event.x;
-        print(_angle);
       });
     }
     );
-   // _sendAngle(_angle);
   }
   void stopListeningToAccelerometer() {
     if (_subscription != null) {
@@ -246,7 +225,8 @@ class _TemperaturePageState extends State<TemperaturePage> {
       }
        double t = -(angle * 0.5);
        double alpha = (t +_newtemp);
-      String a = (alpha).toStringAsFixed(2);
+       String a = (alpha).toStringAsFixed(2);
+      _finaltemp = alpha;
       final response = await _client.post(
         Uri.parse('http://${widget.ipAddress}:8000/api/settings/'),
         body: jsonEncode(<String, dynamic>{
@@ -377,10 +357,18 @@ class _TemperaturePageState extends State<TemperaturePage> {
     child: Column(
     mainAxisAlignment: MainAxisAlignment.center,
     children: <Widget>[
-    Text(
-    'Current Temperature: $_temp Celcius',
-    style: const TextStyle(fontSize: 24),
-    ),
+      widget._isEnabled ?
+      Text(
+        'Setting Temperature: $_finaltemp Celcius',
+        style: const TextStyle(fontSize: 24),
+      ):
+
+
+      Text(
+        'Current Temperature: $_temp Celcius',
+        style: const TextStyle(fontSize: 24),
+      ),
+
     const SizedBox(height: 16),
     TextField(
     controller: _temperatureController,
@@ -418,7 +406,7 @@ class _TemperaturePageState extends State<TemperaturePage> {
       ),
     ],
     ),
-      ), /////put bracket here
+      ),
     ));
 
     }
