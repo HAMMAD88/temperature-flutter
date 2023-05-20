@@ -15,15 +15,18 @@ Here's a sneak peek into the app's functionalities:
 
 **Connecting to the server**
 
-![connect to server](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/57b59f63-b289-4cfd-981d-f3395953c386)
+![connect to server](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/a2483948-80f8-47de-bfb0-610c7ef38d99)
+
 
 **Setting the Temperature**
 
-![set Temperature](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/a2a8cdf0-9c5b-4666-9c1d-af79387eb1a7)
+![setting the temperature](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/1c06f892-088d-426c-8049-f5d0cec3fa45)
+
 
 **The Server-Controlled Cup**
 
-![Cup](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/1931db0c-dade-4e15-b4ae-3fd0304ee609)
+![Cup](https://github.com/HAMMAD88/temperature-flutter/assets/58599091/ac5fc99b-8693-40b7-bb54-32691020c468)
+
 
 ## Contributors ✨
 
